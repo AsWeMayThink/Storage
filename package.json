@@ -7,7 +7,10 @@
     "nedb": "^1.8.0"
   },
   "devDependencies": {
-    "karma": "^4.3.0"
+    "chai": "^4.2.0",
+    "karma": "^4.3.0",
+    "mocha": "^6.2.0",
+    "sinon": "^7.4.2"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
