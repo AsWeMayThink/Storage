@@ -5,8 +5,14 @@ const expect = chai.expect;
 const assert = chai.assert;
 
 describe('Authentication', () => {
+  before(() => {
+    // Get rid of the database before we start new testing.
+
+    this.userStorage = new UserStorage('users.spec.db');
+  });
+
   it('will fail on a login for a non-existent user + password', () => {
-    UserStorage.login('james.kirk@starfleet.com', 'ihatetribbles').then(
+    this.userStorage.login('james.kirk@starfleet.com', 'ihatetribbles').then(
       result => {
         assert.fail(result);
       },
@@ -19,14 +25,14 @@ describe('Authentication', () => {
   it('will fail on a login for a non-existent user + no password', () => {
     // As with the previous test, it's an error _not_ to throw an exception for either
     // of these.
-    UserStorage.login('spock@starfleet.com', '').then(
+    this.userStorage.login('spock@starfleet.com', '').then(
       result => {
         assert.fail(result);
       },
       () => {}
     );
 
-    UserStorage.login('spock@starfleet.com').then(
+    this.userStorage.login('spock@starfleet.com').then(
       result => {
         assert.fail(result);
       },
@@ -35,14 +41,18 @@ describe('Authentication', () => {
   });
 
   it('will allow a user to signup and then immediately login', () => {
-    UserStorage.signup('leonard.mccoy@starfleet.com', 'imadoctor').then(
+    this.userStorage.signup('leonard.mccoy@starfleet.com', 'imadoctor').then(
       () => {},
       () => {
         assert.fail('Signup should not have failed.');
       }
     );
-    UserStorage.login('leonard.mccoy@starfleet.com', 'imadoctor').then(
-      () => {},
+    this.userStorage.login('leonard.mccoy@starfleet.com', 'imadoctor').then(
+      result => {
+        expect(result.token).to.exist();
+        expect(result.user).to.exist();
+        expect(result.user._id).to.exist();
+      },
       () => {
         assert.fail('Login should not have failed.');
       }
@@ -50,37 +60,38 @@ describe('Authentication', () => {
   });
 
   it('will fail for the sequence: signup, login, leave, login', () => {
-    UserStorage.signup('hikaru.sulu@starfleet.com', 'idratherbefencing');
-    UserStorage.login('hikaru.sulu@starfleet.com', 'idratherbefencing');
-    UserStorage.leave();
-    UserStorage.login('hikaru.sulu@starfleet.com', 'idratherbefencing');
+    this.userStorage.signup('hikaru.sulu@starfleet.com', 'idratherbefencing');
+    this.userStorage
+      .login('hikaru.sulu@starfleet.com', 'idratherbefencing')
+      .then(result => {});
+    this.userStorage.leave();
+    this.userStorage.login('hikaru.sulu@starfleet.com', 'idratherbefencing');
     expect(true).to.equal(false);
   });
 
   it('will fail if you attempt to leave without login', () => {
-    UserStorage.leave();
+    this.userStorage.leave();
     expect(true).to.equal(false);
   });
 
   it('will fail for a signup and then login with the right user but wrong password or no password', () => {
-    UserStorage.signup('pavel.chekov@starfleet.com', 'ihatekhan').then(
+    this.userStorage.signup('pavel.chekov@starfleet.com', 'ihatekhan').then(
       () => {},
       () => {
         assert.fail('Signup should not have failed.');
       }
     );
 
-    UserStorage.login(
-      'pavel.chekov@starfleet.com',
-      'russiansinventedthat'
-    ).then(
-      () => {
-        assert.fail('Login with the wrong password should not have worked.');
-      },
-      () => {}
-    );
+    this.userStorage
+      .login('pavel.chekov@starfleet.com', 'russiansinventedthat')
+      .then(
+        () => {
+          assert.fail('Login with the wrong password should not have worked.');
+        },
+        () => {}
+      );
 
-    UserStorage.login('pavel.chekov@starfleet.com', '').then(
+    this.userStorage.login('pavel.chekov@starfleet.com', '').then(
       () => {
         assert.fail('Login with no password should not have worked.');
       },
