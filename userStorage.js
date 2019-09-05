@@ -55,7 +55,7 @@ class UserStorage {
     });
   }
 
-  signup(email, password, profile = {}) {
+  static async signup(email, password, profile = {}) {
     const cryptedPassword = await bcrypt.hash(password, 10);
 
     return new Promise((resolve, reject) => {
@@ -86,7 +86,7 @@ class UserStorage {
   }
 
   // You can only remove yourself.
-  leave(Authorization) {
+  static leave(Authorization) {
     let { _id, email } = getUserId(Authorization);
 
     return new Promise((resolve, reject) => {
@@ -100,36 +100,33 @@ class UserStorage {
     });
   }
 
-  login(email, password) {
+  static async login(email, password) {
     return new Promise((resolve, reject) => {
-      db.users.find({ email },
-        async (err, users) => {
-          if (err) {
-            reject(err);
-          } else {
-            let user = users[0];
+      db.users.find({ email }, async (err, users) => {
+        if (err) {
+          reject(err);
+        } else if (users.length === 0) {
+          reject('User/password failed.');
+        } else {
+          let user = users[0];
 
-            const valid = await bcrypt.compare(
-              args.password,
-              player.password
-            );
+          const valid = await bcrypt.compare(password, user.password);
 
-            if (!valid) {
-              reject(new Error('Invalid password.'));
-            }
-
-            const token = jwt.sign(
-              { _id: user._id, email: user.email },
-              process.env.JWTSECRET
-            );
-
-            resolve({
-              token,
-              user
-            });
+          if (!valid) {
+            reject(new Error('Invalid password.'));
           }
+
+          const token = jwt.sign(
+            { _id: user._id, email: user.email },
+            process.env.JWTSECRET
+          );
+
+          resolve({
+            token,
+            user
+          });
         }
-      );
+      });
     });
   }
 
@@ -142,15 +139,14 @@ class UserStorage {
     // so below.
     return {
       created: user.created,
-      profile: {
-
-      }
+      profile: {}
     };
   }
 
   // Looks for a JWT on a given request. If it's there, it verifies that it's valid and
   // extracts the ID and email from it.
-  static getUserId(Authorization) {Au
+  static getUserId(Authorization) {
+    Au;
     if (Authorization) {
       const token = Authorization.replace('Bearer ', '');
       const { _id, email } = jwt.verify(token, process.env.JWTSECRET);
@@ -162,3 +158,5 @@ class UserStorage {
     throw new Error('Not authenticated');
   }
 }
+
+module.exports = UserStorage;
