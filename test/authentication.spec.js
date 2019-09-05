@@ -58,14 +58,33 @@ describe('Authentication', () => {
   });
 
   it('will fail if you attempt to leave without login', () => {
+    UserStorage.leave();
     expect(true).to.equal(false);
   });
 
-  it('will fail for a signup and then login with the right user but wrong password', () => {
-    expect(true).to.equal(false);
-  });
+  it('will fail for a signup and then login with the right user but wrong password or no password', () => {
+    UserStorage.signup('pavel.chekov@starfleet.com', 'ihatekhan').then(
+      () => {},
+      () => {
+        assert.fail('Signup should not have failed.');
+      }
+    );
 
-  it('will fail for a signup and login with the right user but no password', () => {
-    expect(true).to.equal(false);
+    UserStorage.login(
+      'pavel.chekov@starfleet.com',
+      'russiansinventedthat'
+    ).then(
+      () => {
+        assert.fail('Login with the wrong password should not have worked.');
+      },
+      () => {}
+    );
+
+    UserStorage.login('pavel.chekov@starfleet.com', '').then(
+      () => {
+        assert.fail('Login with no password should not have worked.');
+      },
+      () => {}
+    );
   });
 });
