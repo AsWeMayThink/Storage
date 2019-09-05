@@ -1,38 +1,41 @@
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const Datastore = require('nedb');
 
-let db = new Datastore({ filename: 'users.db', autoload: true });
+// This loads all of the KEY=VALUE strings from the variables.env file and makes them
+// available for use here via process.env.KEY.
+require('dotenv').config({ path: 'variables.env' });
+
+let db = {
+  users: new Datastore({ filename: 'users.db', autoload: true })
+};
 
 // Note: Adding, finding, etc. all use callbacks, that's because they are asynchronous.
 // I've wrapped all of those with ES6 Promises to translate to something a little more
 // common.
 class UserStorage {
-  constructor(myId) {
-    this.myId = myId;
+  // You can only update your own profile.
+  updateProfile(profile, Authorization) {
+    // return new Promise((resolve, reject) => {
+    //   db.insert(user, function(err, newUser) {
+    //     if (err) {
+    //       reject(err);
+    //     } else {
+    //       resolve(newUser);
+    //     }
+    //   });
+    // });
   }
 
-  addUser(user) {
-    // We don't want to attempt to set the ID on the new record. It shouldn't have one
-    // and we'll use to delete to make sure.
-    delete user._id;
-
-    return new Promise((resolve, reject) => {
-      db.insert(user, function(err, newUser) {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(newUser);
-        }
-      });
-    });
-  }
-
-  getUser(id) {
+  // You don't have to be authorized to see a particular user's profile.
+  getProfile(id, Authorization) {
     let query = { _id: id };
 
     // If I ask for the special ID of "me" then I'm looking at my own profile so I should
     // see all the data on it, including stuff which other users cannot see.
     if (id === 'me') {
-      query._id = this.myId;
+      const { _id, email } = UserStorage.getUserId(Authorization);
+      query._id = _id;
     }
 
     return new Promise((resolve, reject) => {
@@ -52,30 +55,110 @@ class UserStorage {
     });
   }
 
+  signup(email, password, profile = {}) {
+    const cryptedPassword = await bcrypt.hash(password, 10);
+
+    return new Promise((resolve, reject) => {
+      db.users.insert(
+        {
+          email,
+          password: cryptedPassword,
+          created: new Date(),
+          profile: profile
+        },
+        (err, newUser) => {
+          if (err) {
+            reject(err);
+          } else {
+            const token = jwt.sign(
+              { _id: newUser._id, email: newUser.email },
+              process.env.JWTSECRET
+            );
+
+            resolve({
+              token,
+              user: newUser
+            });
+          }
+        }
+      );
+    });
+  }
+
+  // You can only remove yourself.
+  leave(Authorization) {
+    let { _id, email } = getUserId(Authorization);
+
+    return new Promise((resolve, reject) => {
+      db.users.remove({ _id }, {}, (err, docs) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(true);
+        }
+      });
+    });
+  }
+
+  login(email, password) {
+    return new Promise((resolve, reject) => {
+      db.users.find({ email },
+        async (err, users) => {
+          if (err) {
+            reject(err);
+          } else {
+            let user = users[0];
+
+            const valid = await bcrypt.compare(
+              args.password,
+              player.password
+            );
+
+            if (!valid) {
+              reject(new Error('Invalid password.'));
+            }
+
+            const token = jwt.sign(
+              { _id: user._id, email: user.email },
+              process.env.JWTSECRET
+            );
+
+            resolve({
+              token,
+              user
+            });
+          }
+        }
+      );
+    });
+  }
+
   // This is a white-list kind of filter. Only the specfic things we want to allow
   // through are going to make it through the filter. Anything not listed will automatically
   // be excluded.
   static filterUser(user) {
+    // Note: Neither ID nor email make the cut for this filter, only the creation date
+    // for the account. If you want to let some profile data through, you have to do
+    // so below.
     return {
-      name: user.name,
       created: user.created,
-      about: user.about
+      profile: {
+
+      }
     };
   }
+
+  // Looks for a JWT on a given request. If it's there, it verifies that it's valid and
+  // extracts the ID and email from it.
+  static getUserId(Authorization) {Au
+    if (Authorization) {
+      const token = Authorization.replace('Bearer ', '');
+      const { _id, email } = jwt.verify(token, process.env.JWTSECRET);
+
+      return { _id, email };
+    }
+
+    // There was no authorization or the JSON Web Token would not verify.
+    throw new Error('Not authenticated');
+  }
 }
-
-let userStorage = new UserStorage('V4sJMN4pOkbtydVe');
-
-// userStorage.addUser({
-//   name: 'JohnMunsch',
-//   created: new Date(2012, 5, 20),
-//   about: '',
-//   email: 'john.munsch@gmail.com'
-// }).then(newUser => console.log(newUser));
-
-// This version is me looking at myself. I should see my email on the profile.
-userStorage.getUser('me').then(user => console.log(user));
-
-// This is me looking at another user or looking at myself as another user would see me.
-// I should not see an email here.
-userStorage.getUser('V4sJMN4pOkbtydVe').then(user => console.log(user));
