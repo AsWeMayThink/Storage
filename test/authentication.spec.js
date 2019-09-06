@@ -1,4 +1,5 @@
 const chai = require('chai');
+const fs = require('fs');
 const UserStorage = require('../userStorage');
 
 const expect = chai.expect;
@@ -6,25 +7,30 @@ const assert = chai.assert;
 
 describe('Authentication', () => {
   before(() => {
-    // Get rid of the database before we start new testing.
+    const tempUserStorage = 'users.spec.db';
 
-    this.userStorage = new UserStorage('users.spec.db');
+    // Get rid of the database before we start new testing.
+    fs.unlinkSync(tempUserStorage);
+    this.userStorage = new UserStorage(tempUserStorage);
   });
 
-  it('will fail on a login for a non-existent user + password', () => {
-    this.userStorage.login('james.kirk@starfleet.com', 'ihatetribbles').then(
-      result => {
-        assert.fail(result);
-      },
-      () => {
-        // The promise returned should reject. If it doesn't, it's an error.
-      }
-    );
+  it('will fail on a login for a non-existent user + password', async () => {
+    // It doesn't matter whether we use async/await or promises to interact with the
+    // authentication, it should work either way.
+    try {
+      let { token, user } = await this.userStorage.login(
+        'james.kirk@starfleet.com',
+        'ihatetribbles'
+      );
+      assert.fail(result);
+    } catch (error) {
+      // The promise returned should reject. If it doesn't, it's an error.
+    }
   });
 
   it('will fail on a login for a non-existent user + no password', () => {
     // As with the previous test, it's an error _not_ to throw an exception for either
-    // of these.
+    // of these. Note: This test uses .then() with success and failure functions.
     this.userStorage.login('spock@starfleet.com', '').then(
       result => {
         assert.fail(result);
@@ -69,9 +75,12 @@ describe('Authentication', () => {
     expect(true).to.equal(false);
   });
 
-  it('will fail if you attempt to leave without login', () => {
-    this.userStorage.leave();
-    expect(true).to.equal(false);
+  it('will fail if you attempt to leave without login', async () => {
+    let { token, user } = await this.userStorage.signup(
+      'nyota.uhura@starfleet.com',
+      'surecontactstarfleetagain'
+    );
+    this.userStorage.leave(user._id).then();
   });
 
   it('will fail for a signup and then login with the right user but wrong password or no password', () => {
