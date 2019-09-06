@@ -10,7 +10,11 @@ describe('Authentication', () => {
     const tempUserStorage = 'users.spec.db';
 
     // Get rid of the database before we start new testing.
-    fs.unlinkSync(tempUserStorage);
+    try {
+      fs.unlinkSync(tempUserStorage);
+    } catch (err) {
+      // Not being able to unlink the file is harmless.
+    }
     this.userStorage = new Authentication(tempUserStorage);
   });
 

@@ -91,4 +91,23 @@ class Authentication {
   }
 }
 
-module.exports = Authentication;
+const MongoClient = require('mongodb').MongoClient;
+
+class MongoDBAuthentication extends Authentication {
+  constructor() {
+    super();
+
+    const uri = process.env.MONGODB_URI;
+
+    const client = new MongoClient(uri, { useNewUrlParser: true });
+
+    client.connect(err => {
+      this.db = {
+        users: client.db('test').collection('users')
+      };
+
+      // client.close();
+    });
+  }
+}
+module.exports = MongoDBAuthentication;
