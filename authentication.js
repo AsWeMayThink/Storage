@@ -9,7 +9,7 @@ require('dotenv').config({ path: 'variables.env' });
 // Note: Adding, finding, etc. all use callbacks, that's because they are asynchronous.
 // I've wrapped all of those with ES6 Promises to translate to something a little more
 // common.
-class UserStorage {
+class Authentication {
   constructor(filename = 'users.db') {
     this.db = {
       users: new Datastore({ filename, autoload: true })
@@ -43,18 +43,6 @@ class UserStorage {
           }
         }
       );
-    });
-  }
-
-  leave(_id) {
-    return new Promise((resolve, reject) => {
-      this.db.users.remove({ _id }, {}, (err, docs) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(true);
-        }
-      });
     });
   }
 
@@ -103,4 +91,4 @@ class UserStorage {
   }
 }
 
-module.exports = UserStorage;
+module.exports = Authentication;
