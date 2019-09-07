@@ -8,13 +8,14 @@ const assert = chai.assert;
 const tempUserStorage = 'users.spec.db';
 
 describe('Authentication', () => {
-  before(() => {
+  before(async () => {
     this.authentication = new Authentication(tempUserStorage);
+
+    await this.authentication.init();
   });
 
   after(() => {
-    // Get rid of the database before we start new testing.
-    fs.unlinkSync(tempUserStorage);
+    this.authentication.destroy();
   });
 
   it('will fail on a login for a non-existent user + password', async () => {
@@ -64,23 +65,34 @@ describe('Authentication', () => {
     expect(user._id).not.to.be.undefined;
   });
 
-  it('will fail for a signup and then login with the right user but wrong password or no password', async () => {
-    await this.authentication.signup('pavel.chekov@starfleet.com', 'ihatekhan');
+  it('will fail for a signup and then login with the right user but wrong password or no password', () => {
+    return this.authentication
+      .signup('pavel.chekov@starfleet.com', 'ihatekhan')
+      .then(() => {
+        this.authentication
+          .login('pavel.chekov@starfleet.com', 'russiansinventedthat')
+          .then(
+            () => {
+              assert.fail(
+                'Login with the wrong password should not have worked.'
+              );
+            },
+            () => {}
+          );
 
-    this.authentication
-      .login('pavel.chekov@starfleet.com', 'russiansinventedthat')
-      .then(
-        () => {
-          assert.fail('Login with the wrong password should not have worked.');
-        },
-        () => {}
-      );
-
-    this.authentication.login('pavel.chekov@starfleet.com', '').then(
-      () => {
-        assert.fail('Login with no password should not have worked.');
-      },
-      () => {}
-    );
+        this.authentication
+          .login('pavel.chekov@starfleet.com', '')
+          .then(() => {
+            assert.fail('Login with no password should not have worked.');
+          })
+          .then(
+            () => {
+              assert.fail(
+                'Login with the wrong password should not have worked.'
+              );
+            },
+            () => {}
+          );
+      });
   });
 });

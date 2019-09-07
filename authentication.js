@@ -1,4 +1,5 @@
 const bcrypt = require('bcryptjs');
+const fs = require('fs');
 const jwt = require('jsonwebtoken');
 const Datastore = require('nedb');
 
@@ -10,66 +11,56 @@ require('dotenv').config({ path: 'variables.env' });
 // I've wrapped all of those with ES6 Promises to translate to something a little more
 // common.
 class Authentication {
-  constructor(filename = 'users.db') {
-    this.db = {
-      users: new Datastore({ filename, autoload: true })
-    };
+  signup(email, password, profile = {}) {
+    return bcrypt.hash(password, 10).then(cryptedPassword => {
+      return new Promise((resolve, reject) => {
+        this.db.users.insert(
+          {
+            email,
+            password: cryptedPassword,
+            created: new Date(),
+            profile: profile
+          },
+          (err, newUser) => {
+            if (err) {
+              reject(err);
+            } else {
+              const token = jwt.sign(
+                { _id: newUser._id, email: newUser.email },
+                process.env.JWTSECRET
+              );
+
+              resolve({
+                token,
+                user: newUser
+              });
+            }
+          }
+        );
+      });
+    });
   }
 
-  async signup(email, password, profile = {}) {
-    const cryptedPassword = await bcrypt.hash(password, 10);
-
+  login(email, password) {
     return new Promise((resolve, reject) => {
-      this.db.users.insert(
-        {
-          email,
-          password: cryptedPassword,
-          created: new Date(),
-          profile: profile
-        },
-        (err, newUser) => {
-          if (err) {
-            reject(err);
-          } else {
+      this.db.users.findOne({ email }, (err, user) => {
+        if (err || !user) {
+          reject('User/password failed.');
+        } else {
+          bcrypt.compare(password, user.password).then(valid => {
+            if (!valid) {
+              reject(new Error('Invalid password.'));
+            }
+
             const token = jwt.sign(
-              { _id: newUser._id, email: newUser.email },
+              { _id: user._id, email: user.email },
               process.env.JWTSECRET
             );
 
             resolve({
               token,
-              user: newUser
+              user
             });
-          }
-        }
-      );
-    });
-  }
-
-  async login(email, password) {
-    return new Promise((resolve, reject) => {
-      this.db.users.find({ email }, async (err, users) => {
-        if (err) {
-          reject(err);
-        } else if (users.length === 0) {
-          reject('User/password failed.');
-        } else {
-          let user = users[0];
-
-          const valid = await bcrypt.compare(password, user.password);
-
-          if (!valid) {
-            reject(new Error('Invalid password.'));
-          }
-
-          const token = jwt.sign(
-            { _id: user._id, email: user.email },
-            process.env.JWTSECRET
-          );
-
-          resolve({
-            token,
-            user
           });
         }
       });
@@ -91,26 +82,45 @@ class Authentication {
   }
 }
 
+class NeDBAuthentication extends Authentication {
+  init(filename = 'users.db') {
+    this.filename = filename;
+
+    this.db = {
+      users: new Datastore({ filename, autoload: true })
+    };
+  }
+
+  destroy() {
+    fs.unlinkSync(this.filename);
+  }
+}
+
 const MongoClient = require('mongodb').MongoClient;
 
 class MongoDBAuthentication extends Authentication {
   constructor() {
     super();
+  }
 
+  async init() {
     const uri = process.env.MONGODB_URI;
 
-    const client = new MongoClient(uri, {
+    this.client = new MongoClient(uri, {
       useNewUrlParser: true,
       useUnifiedTopology: true
     });
 
-    client.connect(err => {
-      this.db = {
-        users: client.db('test').collection('users')
-      };
+    await this.client.connect();
 
-      // client.close();
-    });
+    this.db = {
+      users: this.client.db('test').collection('users')
+    };
+  }
+
+  destroy() {
+    this.client.close();
   }
 }
-module.exports = Authentication;
+
+module.exports = MongoDBAuthentication;
