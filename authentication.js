@@ -99,7 +99,10 @@ class MongoDBAuthentication extends Authentication {
 
     const uri = process.env.MONGODB_URI;
 
-    const client = new MongoClient(uri, { useNewUrlParser: true });
+    const client = new MongoClient(uri, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true
+    });
 
     client.connect(err => {
       this.db = {
@@ -110,4 +113,4 @@ class MongoDBAuthentication extends Authentication {
     });
   }
 }
-module.exports = MongoDBAuthentication;
+module.exports = Authentication;
