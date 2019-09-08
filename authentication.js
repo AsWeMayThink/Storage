@@ -1,7 +1,5 @@
 const bcrypt = require('bcryptjs');
-const fs = require('fs');
 const jwt = require('jsonwebtoken');
-const Datastore = require('nedb');
 
 // This loads all of the KEY=VALUE strings from the variables.env file and makes them
 // available for use here via process.env.KEY.
@@ -82,45 +80,4 @@ class Authentication {
   }
 }
 
-class NeDBAuthentication extends Authentication {
-  init(filename = 'users.db') {
-    this.filename = filename;
-
-    this.db = {
-      users: new Datastore({ filename, autoload: true })
-    };
-  }
-
-  destroy() {
-    fs.unlinkSync(this.filename);
-  }
-}
-
-const MongoClient = require('mongodb').MongoClient;
-
-class MongoDBAuthentication extends Authentication {
-  constructor() {
-    super();
-  }
-
-  async init() {
-    const uri = process.env.MONGODB_URI;
-
-    this.client = new MongoClient(uri, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true
-    });
-
-    await this.client.connect();
-
-    this.db = {
-      users: this.client.db('test').collection('users')
-    };
-  }
-
-  destroy() {
-    this.client.close();
-  }
-}
-
-module.exports = MongoDBAuthentication;
+module.exports = Authentication;

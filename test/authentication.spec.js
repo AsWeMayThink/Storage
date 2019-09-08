@@ -1,6 +1,5 @@
 const chai = require('chai');
-const fs = require('fs');
-const Authentication = require('../authentication');
+const Authentication = require('../tingodb.authentication');
 
 const expect = chai.expect;
 const assert = chai.assert;
@@ -69,6 +68,7 @@ describe('Authentication', () => {
     return this.authentication
       .signup('pavel.chekov@starfleet.com', 'ihatekhan')
       .then(() => {
+        // Once the signup has completed, let's login with incorrect passwords...
         this.authentication
           .login('pavel.chekov@starfleet.com', 'russiansinventedthat')
           .then(
@@ -95,4 +95,6 @@ describe('Authentication', () => {
           );
       });
   });
+
+  it('will allow signup and login, and the returned token will validate fully', () => {});
 });
