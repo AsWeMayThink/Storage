@@ -1,5 +1,6 @@
-const chai = require('chai');
 const Authentication = require('../tingodb.authentication');
+const chai = require('chai');
+const jwtDecode = require('jwt-decode');
 
 const expect = chai.expect;
 const assert = chai.assert;
@@ -96,5 +97,22 @@ describe('Authentication', () => {
       });
   });
 
-  it('will allow signup and login, and the returned token will validate fully', () => {});
+  it('will allow signup and login, and the returned token will validate fully', async () => {
+    await this.authentication.signup(
+      'nyota.uhura@starfleet.com',
+      'contactsfcommandagain'
+    );
+
+    let { token, user } = await this.authentication.login(
+      'nyota.uhura@starfleet.com',
+      'contactsfcommandagain'
+    );
+
+    // Parse the token to pull out the info.
+    const payload = jwtDecode(token);
+
+    expect(payload._id).to.exist;
+    expect(payload.email).to.equal('nyota.uhura@starfleet.com');
+    expect(payload.iat).to.exist;
+  });
 });
