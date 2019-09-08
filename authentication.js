@@ -67,16 +67,23 @@ class Authentication {
 
   // Looks for a JWT on a given request. If it's there, it verifies that it's valid and
   // extracts the ID and email from it.
-  static getUserId(Authorization) {
+  static isAuthenticated(req, res, next) {
+    const Authorization = req.get('Authorization');
+
     if (Authorization) {
       const token = Authorization.replace('Bearer ', '');
-      const { _id, email } = jwt.verify(token, process.env.JWTSECRET);
+      const payload = jwt.verify(token, process.env.JWTSECRET);
 
-      return { _id, email };
+      // Attach the signed payload of the token (decrypted of course) to the request.
+      req.jwt = {
+        payload
+      };
+
+      next();
     }
 
     // There was no authorization or the JSON Web Token would not verify.
-    throw new Error('Not authenticated');
+    res.sendStatus(401);
   }
 }
 
