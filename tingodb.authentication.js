@@ -13,6 +13,8 @@ class TingoDBAuthentication extends Authentication {
     this.db = {
       users: db.collection(this.collectionName)
     };
+
+    this.db.users.ensureIndex({ fieldName: 'email', unique: true });
   }
 
   destroy() {

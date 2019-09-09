@@ -65,25 +65,36 @@ class Authentication {
     });
   }
 
+  // This is middleware for use with Express. You can use it like so:
+  // app.get('/requiresAuth', Authentication.isAuthenticated, (req, res) =>
+  //   ...
+  // );
+  //
   // Looks for a JWT on a given request. If it's there, it verifies that it's valid and
-  // extracts the ID and email from it.
+  // extracts the ID and email from it. If it's not there or not valid, a
+  // HTTP 401 Unauthorize is returned.
   static isAuthenticated(req, res, next) {
     const Authorization = req.get('Authorization');
 
     if (Authorization) {
       const token = Authorization.replace('Bearer ', '');
-      const payload = jwt.verify(token, process.env.JWTSECRET);
+      try {
+        const payload = jwt.verify(token, process.env.JWTSECRET);
 
-      // Attach the signed payload of the token (decrypted of course) to the request.
-      req.jwt = {
-        payload
-      };
+        // Attach the signed payload of the token (decrypted of course) to the request.
+        req.jwt = {
+          payload
+        };
 
-      next();
+        next();
+      } catch {
+        // The JSON Web Token would not verify.
+        res.sendStatus(401);
+      }
+    } else {
+      // There was no authorization.
+      res.sendStatus(401);
     }
-
-    // There was no authorization or the JSON Web Token would not verify.
-    res.sendStatus(401);
   }
 }
 

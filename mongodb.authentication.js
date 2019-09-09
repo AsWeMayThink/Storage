@@ -15,6 +15,8 @@ class MongoDBAuthentication extends Authentication {
     this.db = {
       users: this.client.db('test').collection('users')
     };
+
+    this.db.users.ensureIndex('email', { unique: true });
   }
 
   destroy() {

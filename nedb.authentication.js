@@ -9,6 +9,8 @@ class NeDBAuthentication extends Authentication {
     this.db = {
       users: new Datastore({ filename, autoload: true })
     };
+
+    this.db.users.ensureIndex({ fieldName: 'email', unique: true });
   }
 
   destroy() {

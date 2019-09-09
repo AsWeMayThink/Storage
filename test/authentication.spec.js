@@ -1,4 +1,4 @@
-const Authentication = require('../tingodb.authentication');
+const Authentication = require('../mongodb.authentication');
 const chai = require('chai');
 const jwtDecode = require('jwt-decode');
 
@@ -9,9 +9,9 @@ const tempUserStorage = 'users.spec.db';
 
 describe('Authentication', () => {
   before(async () => {
-    this.authentication = new Authentication(tempUserStorage);
+    this.authentication = new Authentication();
 
-    await this.authentication.init();
+    await this.authentication.init(tempUserStorage);
   });
 
   after(() => {
