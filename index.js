@@ -1,5 +1,5 @@
 const express = require('express');
-const Authentication = require('./tingodb.authentication');
+const Authentication = require('./nedb.authentication');
 
 const app = express();
 app.use(express.json());
