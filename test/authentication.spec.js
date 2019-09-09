@@ -1,4 +1,4 @@
-const Authentication = require('../mongodb.authentication');
+const Authentication = require('../nedb.authentication');
 const chai = require('chai');
 const jwtDecode = require('jwt-decode');
 
