@@ -1,4 +1,4 @@
-const Authentication = require('../nedb.authentication');
+const Authentication = require('../tingodb.authentication');
 const chai = require('chai');
 const jwtDecode = require('jwt-decode');
 

@@ -2,6 +2,7 @@ const Authentication = require('./authentication');
 const MongoClient = require('mongodb').MongoClient;
 
 class MongoDBAuthentication extends Authentication {
+  // TODO: Pass in collection name.
   async init() {
     const uri = process.env.MONGODB_URI;
 
@@ -20,6 +21,7 @@ class MongoDBAuthentication extends Authentication {
   }
 
   destroy() {
+    // TODO: Clear out the collection on destroy().
     this.client.close();
   }
 }
