@@ -79,6 +79,7 @@ class Authentication {
     if (Authorization) {
       const token = Authorization.replace('Bearer ', '');
       try {
+        // JWTSECRET=some long secret string
         const payload = jwt.verify(token, process.env.JWTSECRET);
 
         // Attach the signed payload of the token (decrypted of course) to the request.
